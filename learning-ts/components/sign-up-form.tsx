@@ -26,6 +26,7 @@ export function SignUpForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [username, setUsername] = useState("");
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +40,27 @@ export function SignUpForm({
       return;
     }
 
+    if (!username.trim()) {
+      setError("Username is required");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      // Sign up the user and pass username in metadata
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          data: {
+            username: username.trim()
+          }
         },
       });
-      if (error) throw error;
+
+      if (signUpError) throw signUpError;
+
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -66,6 +79,21 @@ export function SignUpForm({
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="johndoe"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-zA-Z0-9_-]+"
+                  title="Username can only contain letters, numbers, underscores, and hyphens"
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
